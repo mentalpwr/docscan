@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DocClear</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --glass-bg:rgba(255,255,255,0.12);--glass-border:rgba(255,255,255,0.25);
+  --glass-shadow:0 8px 32px rgba(0,0,0,0.18);--glass-blur:blur(20px);
+  --text-primary:#ffffff;--text-secondary:rgba(255,255,255,0.7);--text-hint:rgba(255,255,255,0.45);
+  --accent:#a8e6cf;--accent2:#ffd3b6;--danger:#ffaaa5;--warn:#ffe0a0;
+}
+html,body{min-height:100vh;font-family:'Sora',sans-serif;overflow-x:hidden;}
+.bg{position:fixed;inset:0;z-index:0;background:linear-gradient(135deg,#0f1b35 0%,#1a2a4a 30%,#0d2137 60%,#1b1040 100%);}
+.bg-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;}
+.orb1{width:500px;height:500px;top:-100px;left:-100px;background:rgba(100,160,255,0.25);animation:drift1 12s ease-in-out infinite alternate;}
+.orb2{width:400px;height:400px;bottom:-80px;right:-80px;background:rgba(168,230,207,0.2);animation:drift2 15s ease-in-out infinite alternate;}
+.orb3{width:300px;height:300px;top:40%;left:40%;background:rgba(180,120,255,0.15);animation:drift3 10s ease-in-out infinite alternate;}
+@keyframes drift1{to{transform:translate(60px,80px) scale(1.1)}}
+@keyframes drift2{to{transform:translate(-50px,-60px) scale(1.08)}}
+@keyframes drift3{to{transform:translate(-40px,50px) scale(0.9)}}
+.noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.04;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");}
+#app{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;}
+.glass-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,0.15);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeSlideUp .5s ease both;}
+
+/* ── SCREENS ── */
+.screen{display:none;width:100%;max-width:420px;flex-direction:column;gap:1rem;}
+.screen.active{display:flex;}
+
+/* ── ONBOARDING ── */
+#screen-lang{text-align:center;padding:2.5rem 2rem 2rem;}
+.app-icon{width:72px;height:72px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);border-radius:20px;margin:0 auto 1.2rem;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.2);}
+.app-icon svg{width:34px;height:34px;stroke:#a8e6cf;fill:none;stroke-width:1.5;}
+.onb-title{font-family:'Playfair Display',serif;font-size:1.9rem;font-style:italic;color:#fff;margin-bottom:.4rem;letter-spacing:-.01em;}
+.onb-sub{font-size:.82rem;color:var(--text-secondary);font-weight:300;margin-bottom:2rem;line-height:1.6;}
+.lang-selector-btn{width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:14px;padding:1rem 1.2rem;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .2s,border-color .2s;color:#fff;font-family:'Sora',sans-serif;font-size:.9rem;margin-bottom:.75rem;}
+.lang-selector-btn:hover{background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35);}
+.flag-circle{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.lang-info{text-align:left;flex:1;}
+.lang-name{font-weight:500;font-size:.9rem;}
+.lang-native{font-size:.75rem;color:var(--text-secondary);}
+.chevron{width:20px;height:20px;opacity:.5;transition:transform .25s;flex-shrink:0;}
+.lang-selector-btn.open .chevron{transform:rotate(180deg);}
+.lang-dropdown{width:100%;background:rgba(15,27,53,0.95);border:1px solid rgba(255,255,255,0.18);border-radius:14px;backdrop-filter:blur(24px);overflow:hidden;margin-bottom:.75rem;max-height:0;transition:max-height .35s ease,opacity .25s;opacity:0;}
+.lang-dropdown.open{max-height:400px;opacity:1;}
+.lang-opt{display:flex;align-items:center;gap:12px;padding:.85rem 1.2rem;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,0.06);}
+.lang-opt:last-child{border-bottom:none;}
+.lang-opt:hover{background:rgba(255,255,255,0.07);}
+.lang-opt.selected{background:rgba(168,230,207,0.1);}
+.opt-flag{font-size:1.3rem;width:28px;text-align:center;}
+.opt-text{flex:1;}
+.opt-name{font-size:.88rem;font-weight:500;color:#fff;}
+.opt-en{font-size:.75rem;color:var(--text-secondary);}
+.opt-check{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.lang-opt.selected .opt-check{background:var(--accent);border-color:var(--accent);}
+.lang-opt.selected .opt-check::after{content:'';width:6px;height:6px;background:#0f1b35;border-radius:50%;}
+.remember-row{display:flex;align-items:center;gap:10px;padding:.6rem .2rem;margin-bottom:1.5rem;cursor:pointer;}
+.custom-check{width:20px;height:20px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.custom-check.checked{background:var(--accent);border-color:var(--accent);}
+.custom-check.checked::after{content:'';width:10px;height:7px;border-left:2px solid #0f1b35;border-bottom:2px solid #0f1b35;transform:rotate(-45deg) translate(1px,-1px);display:block;}
+.remember-label{font-size:.82rem;color:var(--text-secondary);user-select:none;}
+.continue-btn{width:100%;padding:1rem;background:linear-gradient(135deg,rgba(168,230,207,0.3),rgba(168,230,207,0.15));border:1px solid rgba(168,230,207,0.4);border-radius:14px;color:#fff;font-family:'Sora',sans-serif;font-size:.95rem;font-weight:500;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(168,230,207,0.1),inset 0 1px 0 rgba(255,255,255,0.1);}
+.continue-btn:hover{background:linear-gradient(135deg,rgba(168,230,207,0.4),rgba(168,230,207,0.22));transform:translateY(-1px);}
+.continue-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+
+/* ── AUTH SCREEN ── */
+#screen-auth{padding:2.5rem 2rem;}
+.auth-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-style:italic;color:#fff;margin-bottom:.4rem;text-align:center;}
+.auth-sub{font-size:.82rem;color:var(--text-secondary);text-align:center;margin-bottom:2rem;line-height:1.6;}
+.google-btn{width:100%;padding:.9rem 1rem;background:white;border:none;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:500;color:#1a1a1a;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,0.2);margin-bottom:1rem;}
+.google-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,0.25);}
+.google-btn svg{width:20px;height:20px;flex-shrink:0;}
+.auth-divider{display:flex;align-items:center;gap:12px;margin-bottom:1rem;}
+.auth-divider-line{flex:1;height:1px;background:rgba(255,255,255,0.12);}
+.auth-divider-text{font-size:.75rem;color:var(--text-hint);}
+.auth-input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:.8rem 1rem;color:#fff;font-family:'Sora',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s;margin-bottom:.75rem;}
+.auth-input::placeholder{color:var(--text-hint);}
+.auth-input:focus{border-color:rgba(168,230,207,0.5);}
+.auth-submit{width:100%;padding:.9rem;background:linear-gradient(135deg,rgba(168,230,207,0.3),rgba(168,230,207,0.15));border:1px solid rgba(168,230,207,0.4);border-radius:12px;color:#fff;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:.75rem;}
+.auth-submit:hover{background:linear-gradient(135deg,rgba(168,230,207,0.4),rgba(168,230,207,0.22));transform:translateY(-1px);}
+.auth-toggle{font-size:.8rem;color:var(--text-secondary);text-align:center;cursor:pointer;}
+.auth-toggle span{color:var(--accent);text-decoration:underline;}
+.auth-error{background:rgba(255,170,165,0.15);border:1px solid rgba(255,170,165,0.3);border-radius:10px;padding:.7rem 1rem;font-size:.8rem;color:var(--danger);margin-bottom:.75rem;display:none;}
+.auth-back{font-size:.8rem;color:var(--text-hint);text-align:center;cursor:pointer;margin-top:.5rem;}
+.auth-back:hover{color:var(--text-secondary);}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 .25rem;}
+.topbar-logo{font-family:'Playfair Display',serif;font-style:italic;font-size:1.3rem;color:#fff;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-lang{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:20px;padding:5px 12px 5px 8px;cursor:pointer;transition:background .15s;font-size:.8rem;color:var(--text-secondary);}
+.topbar-lang:hover{background:rgba(255,255,255,0.16);}
+.avatar-btn{width:32px;height:32px;border-radius:50%;background:rgba(168,230,207,0.2);border:1px solid rgba(168,230,207,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;overflow:hidden;}
+.avatar-btn:hover{background:rgba(168,230,207,0.3);}
+.avatar-btn img{width:100%;height:100%;object-fit:cover;}
+.avatar-btn svg{width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;}
+
+/* ── SCAN COUNTER ── */
+.scan-counter{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.1rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:14px;}
+.sc-left{font-size:.8rem;color:var(--text-secondary);}
+.sc-dots{display:flex;gap:5px;}
+.sc-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);}
+.sc-dot.used{background:var(--accent);}
+.sc-upgrade{font-size:.75rem;color:var(--accent2);cursor:pointer;text-decoration:underline;}
+.sc-unlimited{font-size:.75rem;color:var(--accent);font-weight:500;}
+
+/* ── UPLOAD ── */
+.upload-zone{padding:2.2rem 1.5rem;text-align:center;cursor:pointer;border:1.5px dashed rgba(255,255,255,0.2);border-radius:22px;transition:border-color .2s,background .2s;position:relative;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:rgba(168,230,207,0.6);background:rgba(168,230,207,0.05);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon-wrap{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.15);margin:0 auto .9rem;display:flex;align-items:center;justify-content:center;}
+.upload-icon-wrap svg{width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:1.5;}
+.upload-title{font-size:.95rem;font-weight:500;color:#fff;margin-bottom:.3rem;}
+.upload-hint{font-size:.78rem;color:var(--text-hint);}
+.preview-wrap{display:none;position:relative;border-radius:22px;overflow:hidden;}
+.preview-wrap img{width:100%;max-height:260px;object-fit:contain;background:rgba(0,0,0,0.2);display:block;}
+.preview-remove{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.preview-remove:hover{background:rgba(200,50,50,0.6);}
+.text-card{padding:1rem 1.2rem;}
+.text-card-label{font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-hint);margin-bottom:.6rem;display:flex;align-items:center;gap:6px;}
+.text-card-label svg{width:13px;height:13px;stroke:var(--text-hint);fill:none;stroke-width:2;}
+.text-input{width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'Sora',sans-serif;font-size:.88rem;font-weight:300;line-height:1.6;resize:none;min-height:60px;max-height:140px;}
+.text-input::placeholder{color:var(--text-hint);}
+.analyze-btn{width:100%;padding:1.05rem;background:linear-gradient(135deg,rgba(168,230,207,0.28),rgba(168,230,207,0.12));border:1px solid rgba(168,230,207,0.35);border-radius:16px;color:#fff;font-family:'Sora',sans-serif;font-size:.95rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:0 4px 20px rgba(168,230,207,0.1),inset 0 1px 0 rgba(255,255,255,0.1);}
+.analyze-btn:hover:not(:disabled){background:linear-gradient(135deg,rgba(168,230,207,0.38),rgba(168,230,207,0.2));box-shadow:0 6px 28px rgba(168,230,207,0.18);transform:translateY(-1px);}
+.analyze-btn:disabled{opacity:.35;cursor:not-allowed;}
+.analyze-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;}
+.loading-card{display:none;padding:2.5rem;text-align:center;}
+.dots{display:flex;justify-content:center;gap:8px;margin-bottom:1rem;}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 1.3s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+.loading-text{font-size:.85rem;color:var(--text-secondary);font-weight:300;}
+.error-strip{display:none;background:rgba(255,170,165,0.12);border:1px solid rgba(255,170,165,0.25);border-radius:12px;padding:.8rem 1rem;font-size:.82rem;color:var(--danger);}
+.limit-strip{display:none;background:rgba(255,224,160,0.1);border:1px solid rgba(255,224,160,0.25);border-radius:12px;padding:1rem;font-size:.85rem;color:var(--warn);text-align:center;line-height:1.6;}
+.limit-strip button{margin-top:.7rem;padding:.5rem 1.2rem;background:rgba(255,224,160,0.15);border:1px solid rgba(255,224,160,0.3);border-radius:10px;color:var(--warn);font-family:'Sora',sans-serif;font-size:.8rem;cursor:pointer;}
+
+/* ── RESULT ── */
+.result-card{display:none;padding:1.5rem;animation:fadeSlideUp .4s ease both;}
+.success-badge{display:flex;align-items:center;gap:8px;background:rgba(168,230,207,0.1);border:1px solid rgba(168,230,207,0.2);border-radius:10px;padding:.6rem 1rem;margin-bottom:1.2rem;}
+.success-badge svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:2.5;}
+.success-badge span{font-size:.78rem;font-weight:500;color:var(--accent);}
+.result-doc-type{font-family:'Playfair Display',serif;font-style:italic;font-size:1.25rem;color:#fff;margin-bottom:1.2rem;}
+.result-section{margin-bottom:1.2rem;}
+.result-section:last-child{margin-bottom:0;}
+.rs-label{font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text-hint);margin-bottom:.5rem;}
+.rs-text{font-size:.88rem;color:var(--text-secondary);line-height:1.7;font-weight:300;}
+.deadline-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,211,182,0.15);border:1px solid rgba(255,211,182,0.3);border-radius:10px;padding:.55rem 1rem;font-size:.82rem;color:var(--accent2);margin-bottom:1.2rem;}
+.deadline-pill svg{width:14px;height:14px;stroke:var(--accent2);fill:none;stroke-width:2;}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:.7rem;}
+.step-item{display:flex;gap:10px;align-items:flex-start;}
+.step-num{width:22px;height:22px;border-radius:50%;background:rgba(168,230,207,0.2);border:1px solid rgba(168,230,207,0.35);font-size:.72rem;font-weight:600;color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.step-text{font-size:.87rem;color:var(--text-secondary);line-height:1.55;font-weight:300;}
+.reset-btn{width:100%;padding:.75rem;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:14px;color:var(--text-secondary);font-family:'Sora',sans-serif;font-size:.85rem;cursor:pointer;transition:background .15s;display:none;}
+.reset-btn:hover{background:rgba(255,255,255,0.12);}
+
+/* ── EXAMPLES ── */
+.examples-label{font-size:.7rem;text-align:center;color:var(--text-hint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.6rem;}
+.examples-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:.5rem 0;}
+.ex-chip{font-size:.75rem;padding:6px 13px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:20px;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.ex-chip:hover{background:rgba(168,230,207,0.12);border-color:rgba(168,230,207,0.3);color:var(--accent);}
+
+/* ── HISTORY SCREEN ── */
+#screen-history{max-width:480px;}
+.history-header{display:flex;align-items:center;justify-content:space-between;padding:.25rem;}
+.history-title{font-family:'Playfair Display',serif;font-style:italic;font-size:1.2rem;color:#fff;}
+.back-btn{font-size:.8rem;color:var(--text-hint);cursor:pointer;display:flex;align-items:center;gap:4px;}
+.back-btn:hover{color:var(--text-secondary);}
+.history-list{display:flex;flex-direction:column;gap:8px;}
+.history-item{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:1rem 1.2rem;cursor:pointer;transition:background .15s;}
+.history-item:hover{background:rgba(255,255,255,0.11);}
+.hi-type{font-size:.88rem;font-weight:500;color:#fff;margin-bottom:3px;}
+.hi-summary{font-size:.78rem;color:var(--text-secondary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.hi-date{font-size:.7rem;color:var(--text-hint);margin-top:5px;}
+.history-empty{text-align:center;padding:3rem 1rem;color:var(--text-hint);font-size:.88rem;line-height:1.7;}
+
+/* ── PROFILE SCREEN ── */
+#screen-profile{max-width:420px;padding:1.5rem 2rem;}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:rgba(168,230,207,0.15);border:2px solid rgba(168,230,207,0.3);margin:0 auto .75rem;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;}
+.profile-avatar svg{width:28px;height:28px;stroke:var(--accent);fill:none;stroke-width:1.5;}
+.profile-name{font-size:1rem;font-weight:500;color:#fff;text-align:center;margin-bottom:.25rem;}
+.profile-email{font-size:.8rem;color:var(--text-secondary);text-align:center;margin-bottom:1.5rem;}
+.plan-badge{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;}
+.plan-left .plan-label{font-size:.7rem;color:var(--text-hint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.plan-left .plan-name{font-size:1rem;font-weight:500;color:#fff;}
+.plan-upgrade{font-size:.8rem;padding:.5rem 1rem;background:linear-gradient(135deg,rgba(168,230,207,0.25),rgba(168,230,207,0.1));border:1px solid rgba(168,230,207,0.3);border-radius:10px;color:var(--accent);cursor:pointer;font-family:'Sora',sans-serif;transition:all .15s;}
+.plan-upgrade:hover{background:linear-gradient(135deg,rgba(168,230,207,0.35),rgba(168,230,207,0.18));}
+.profile-actions{display:flex;flex-direction:column;gap:8px;}
+.profile-action-btn{width:100%;padding:.8rem 1rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:var(--text-secondary);font-family:'Sora',sans-serif;font-size:.88rem;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:10px;}
+.profile-action-btn:hover{background:rgba(255,255,255,0.1);}
+.profile-action-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;flex-shrink:0;}
+.signout-btn{color:var(--danger);border-color:rgba(255,170,165,0.2);}
+.profile-back{font-size:.8rem;color:var(--text-hint);text-align:center;cursor:pointer;margin-top:.5rem;}
+.profile-back:hover{color:var(--text-secondary);}
+</style>
+</head>
+<body>
+<div class="bg"><div class="bg-orb orb1"></div><div class="bg-orb orb2"></div><div class="bg-orb orb3"></div></div>
+<div class="noise"></div>
+
+<div id="app">
+
+<!-- ── LANGUAGE SCREEN ── -->
+<div id="screen-lang" class="screen glass-card anim">
+  <div class="app-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></div>
+  <div class="onb-title">DocClear</div>
+  <div class="onb-sub">Understand any official document instantly.<br>Choose your language to get started.</div>
+  <button class="lang-selector-btn" id="langSelectorBtn" onclick="toggleDropdown()">
+    <div class="flag-circle" id="selectedFlag">🌐</div>
+    <div class="lang-info"><div class="lang-name" id="selectedLangName">Select language</div><div class="lang-native" id="selectedLangNative">Tap to choose</div></div>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div class="lang-dropdown" id="langDropdown">
+    <div class="lang-opt" data-lang="ru" data-flag="🇷🇺" data-name="Русский" data-en="Russian" onclick="selectLang(this)"><span class="opt-flag">🇷🇺</span><div class="opt-text"><div class="opt-name">Русский</div><div class="opt-en">Russian</div></div><div class="opt-check"></div></div>
+    <div class="lang-opt" data-lang="he" data-flag="🇮🇱" data-name="עברית" data-en="Hebrew" onclick="selectLang(this)"><span class="opt-flag">🇮🇱</span><div class="opt-text"><div class="opt-name">עברית</div><div class="opt-en">Hebrew</div></div><div class="opt-check"></div></div>
+    <div class="lang-opt" data-lang="en" data-flag="🇬🇧" data-name="English" data-en="English" onclick="selectLang(this)"><span class="opt-flag">🇬🇧</span><div class="opt-text"><div class="opt-name">English</div><div class="opt-en">English</div></div><div class="opt-check"></div></div>
+    <div class="lang-opt" data-lang="ar" data-flag="🇸🇦" data-name="العربية" data-en="Arabic" onclick="selectLang(this)"><span class="opt-flag">🇸🇦</span><div class="opt-text"><div class="opt-name">العربية</div><div class="opt-en">Arabic</div></div><div class="opt-check"></div></div>
+    <div class="lang-opt" data-lang="uk" data-flag="🇺🇦" data-name="Українська" data-en="Ukrainian" onclick="selectLang(this)"><span class="opt-flag">🇺🇦</span><div class="opt-text"><div class="opt-name">Українська</div><div class="opt-en">Ukrainian</div></div><div class="opt-check"></div></div>
+    <div class="lang-opt" data-lang="fr" data-flag="🇫🇷" data-name="Français" data-en="French" onclick="selectLang(this)"><span class="opt-flag">🇫🇷</span><div class="opt-text"><div class="opt-name">Français</div><div class="opt-en">French</div></div><div class="opt-check"></div></div>
+  </div>
+  <label class="remember-row" onclick="toggleRemember()">
+    <div class="custom-check" id="rememberCheck"></div>
+    <span class="remember-label">Remember my choice</span>
+  </label>
+  <button class="continue-btn" id="continueBtn" onclick="goToAuth()" disabled>Continue →</button>
+</div>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="screen-auth" class="screen glass-card anim">
+  <div style="text-align:center;margin-bottom:1.5rem;">
+    <div class="app-icon" style="margin-bottom:1rem;"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    <div class="auth-title" id="authTitle">Sign in to DocClear</div>
+    <div class="auth-sub" id="authSub">Save your scan history and manage your account</div>
+  </div>
+  <button class="google-btn" onclick="signInGoogle()">
+    <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Continue with Google
+  </button>
+  <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or use email</div><div class="auth-divider-line"></div></div>
+  <div class="auth-error" id="authError"></div>
+  <input class="auth-input" type="email" id="authEmail" placeholder="Email">
+  <input class="auth-input" type="password" id="authPassword" placeholder="Password">
+  <button class="auth-submit" id="authSubmit" onclick="signInEmail()">Sign in</button>
+  <div class="auth-toggle" id="authToggle">No account? <span onclick="toggleAuthMode()">Create one</span></div>
+  <div class="auth-back" onclick="goToLang()">← Change language</div>
+</div>
+
+<!-- ── MAIN SCAN SCREEN ── -->
+<div id="screen-main" class="screen" style="max-width:480px;">
+  <div class="topbar">
+    <div class="topbar-logo">DocClear</div>
+    <div class="topbar-right">
+      <div class="topbar-lang" onclick="goToLang()" title="Change language">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        <span class="tl-flag" id="mainFlag">🌐</span>
+        <span id="mainLangLabel" style="font-size:.8rem;color:var(--text-secondary)"></span>
+      </div>
+      <div class="avatar-btn" id="avatarBtn" onclick="goToProfile()">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan counter -->
+  <div class="scan-counter" id="scanCounter">
+    <div class="sc-left" id="scLabel">Scans today</div>
+    <div class="sc-dots" id="scDots"></div>
+    <div id="scRight"></div>
+  </div>
+
+  <!-- Upload -->
+  <div class="glass-card" style="padding:0;overflow:hidden;">
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*">
+      <div class="upload-icon-wrap"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="upload-title" id="upload-title">Upload document photo</div>
+      <div class="upload-hint" id="upload-hint">Letter, notice, contract, fine, receipt…</div>
+    </div>
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" src="" alt="">
+      <button class="preview-remove" onclick="removePhoto()">✕</button>
+    </div>
+  </div>
+
+  <!-- Text -->
+  <div class="glass-card text-card">
+    <div class="text-card-label">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span id="comment-label-text">Add comment or paste text (optional)</span>
+    </div>
+    <textarea class="text-input" id="textInput" rows="3"></textarea>
+  </div>
+
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span id="analyzeLabel">Explain this document</span>
+  </button>
+
+  <div class="error-strip" id="errorStrip"></div>
+  <div class="limit-strip" id="limitStrip">
+    <div id="limitText">You've used all 3 free scans today.</div>
+    <button onclick="goToProfile()">Upgrade to Pro →</button>
+  </div>
+
+  <div class="glass-card loading-card" id="loadingCard">
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="loading-text" id="loadingText">Reading your document…</div>
+  </div>
+
+  <div class="glass-card result-card" id="resultCard">
+    <div class="success-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span id="recognizedLabel">Document recognized</span></div>
+    <div class="result-doc-type" id="docType"></div>
+    <div class="result-section"><div class="rs-label" id="summaryLabel">What it says</div><div class="rs-text" id="docSummary"></div></div>
+    <div class="deadline-pill" id="deadlinePill" style="display:none"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="deadlineText"></span></div>
+    <div class="result-section"><div class="rs-label" id="actionsLabel">What to do</div><ul class="steps-list" id="stepsList"></ul></div>
+  </div>
+
+  <button class="reset-btn" id="resetBtn" onclick="resetScan()">← Scan another</button>
+
+  <div id="examplesBlock">
+    <div class="examples-label" id="examples-label">Try an example</div>
+    <div class="examples-row">
+      <div class="ex-chip" id="ex-tax" onclick="loadExample('tax')">Tax notice</div>
+      <div class="ex-chip" id="ex-fine" onclick="loadExample('fine')">Parking fine</div>
+      <div class="ex-chip" id="ex-bank" onclick="loadExample('bank')">Bank alert</div>
+      <div class="ex-chip" id="ex-health" onclick="loadExample('health')">Medical call</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY SCREEN ── -->
+<div id="screen-history" class="screen anim" style="max-width:480px;">
+  <div class="history-header">
+    <div class="back-btn" onclick="showScreen('main')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <span id="backLabel">Back</span>
+    </div>
+    <div class="history-title" id="historyTitle">History</div>
+    <div style="width:40px"></div>
+  </div>
+  <div id="historyList" class="history-list"></div>
+</div>
+
+<!-- ── PROFILE SCREEN ── -->
+<div id="screen-profile" class="screen glass-card anim">
+  <div class="profile-avatar" id="profileAvatar">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  </div>
+  <div class="profile-name" id="profileName">User</div>
+  <div class="profile-email" id="profileEmail"></div>
+  <div class="plan-badge">
+    <div class="plan-left"><div class="plan-label">Current plan</div><div class="plan-name" id="planName">Free</div></div>
+    <button class="plan-upgrade" id="planUpgradeBtn" onclick="alert('Stripe integration coming soon!')">Upgrade →</button>
+  </div>
+  <div class="profile-actions">
+    <button class="profile-action-btn" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span id="historyBtnLabel">Scan history</span>
+    </button>
+    <button class="profile-action-btn signout-btn" onclick="signOut()">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span id="signoutLabel">Sign out</span>
+    </button>
+  </div>
+  <div class="profile-back" onclick="showScreen('main')" id="profileBack">← Back</div>
+</div>
+
+</div><!-- /app -->
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut as fbSignOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDjRJf0CVVfwApPxyOQS7KP9jsgZtjBj3Y",
+  authDomain: "docclear.firebaseapp.com",
+  projectId: "docclear",
+  storageBucket: "docclear.firebasestorage.app",
+  messagingSenderId: "592305195215",
+  appId: "1:592305195215:web:c90db32dae158a16934fba",
+  measurementId: "G-G8GGS4T18E"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const FREE_LIMIT = 3;
+
+// ── UI strings ──
+const UI = {
+  ru:{ analyze:'Объяснить документ', loading:'Читаю документ…', recognized:'Документ распознан', summary:'Что здесь написано', actions:'Что нужно сделать', reset:'← Ещё один документ', placeholder:'Например: "Пришло письмо, не понимаю что от меня хочуть"', uploadTitle:'Загрузить фото документа', uploadHint:'Письмо, уведомление, договор, штраф, квитанция…', commentLabel:'Добавить комментарий или вставить текст (необязательно)', examplesLabel:'Попробовать пример', ex_tax:'Письмо от налоговой', ex_fine:'Штраф за парковку', ex_bank:'Уведомление банка', ex_health:'Вызов в поликлинику', scLabel:'Сканов сегодня', limitText:'Вы использовали все 3 бесплатных скана сегодня.', historyTitle:'История', backLabel:'Назад', historyBtnLabel:'История сканов', signoutLabel:'Выйти', profileBack:'← Назад', authTitle:'Войти в DocClear', authSub:'Сохраняйте историю документов и управляйте аккаунтом', upgradeBtn:'Обновить →' },
+  he:{ analyze:'הסבר מסמך', loading:'קורא את המסמך…', recognized:'המסמך זוהה', summary:'מה כתוב כאן', actions:'מה לעשות', reset:'← סרוק מסמך נוסף', placeholder:'לדוגמה: "קיבלתי מכתב ולא מבין מה רוצים ממני"', uploadTitle:'העלה תמונת מסמך', uploadHint:'מכתב, הודעה, חוזה, קנס, קבלה…', commentLabel:'הוסף הערה או הדבק טקסט (אופציונלי)', examplesLabel:'נסה דוגמה', ex_tax:'מכתב ממס הכנסה', ex_fine:'דוח חניה', ex_bank:'התראת בנק', ex_health:'הזמנה לרופא', scLabel:'סריקות היום', limitText:'השתמשת ב-3 סריקות החינמיות שלך להיום.', historyTitle:'היסטוריה', backLabel:'חזרה', historyBtnLabel:'היסטוריית סריקות', signoutLabel:'התנתק', profileBack:'← חזרה', authTitle:'כניסה ל-DocClear', authSub:'שמור את היסטוריית המסמכים שלך', upgradeBtn:'שדרג →' },
+  en:{ analyze:'Explain this document', loading:'Reading your document…', recognized:'Document recognized', summary:'What it says', actions:'What to do', reset:'← Scan another document', placeholder:'e.g. "Got a letter, not sure what they want from me"', uploadTitle:'Upload document photo', uploadHint:'Letter, notice, contract, fine, receipt…', commentLabel:'Add comment or paste text (optional)', examplesLabel:'Try an example', ex_tax:'Tax notice', ex_fine:'Parking fine', ex_bank:'Bank alert', ex_health:'Medical call', scLabel:'Scans today', limitText:"You've used all 3 free scans today.", historyTitle:'History', backLabel:'Back', historyBtnLabel:'Scan history', signoutLabel:'Sign out', profileBack:'← Back', authTitle:'Sign in to DocClear', authSub:'Save your scan history and manage your account', upgradeBtn:'Upgrade →' },
+  ar:{ analyze:'اشرح هذا المستند', loading:'جارٍ قراءة المستند…', recognized:'تم التعرف على المستند', summary:'ما يقوله المستند', actions:'ماذا تفعل', reset:'← مسح مستند آخر', placeholder:'مثال: "وصلني خطاب ولا أفهم ما يريدون مني"', uploadTitle:'رفع صورة المستند', uploadHint:'رسالة، إشعار، عقد، غرامة، إيصال…', commentLabel:'أضف تعليقاً أو الصق نصاً (اختياري)', examplesLabel:'جرّب مثالاً', ex_tax:'إشعار ضريبي', ex_fine:'مخالفة وقوف', ex_bank:'تنبيه بنكي', ex_health:'موعد طبي', scLabel:'المسوحات اليوم', limitText:'استخدمت جميع مسوحاتك المجانية الثلاثة اليوم.', historyTitle:'السجل', backLabel:'رجوع', historyBtnLabel:'سجل المسوحات', signoutLabel:'تسجيل خروج', profileBack:'← رجوع', authTitle:'تسجيل الدخول', authSub:'احفظ سجل مستنداتك', upgradeBtn:'ترقية →' },
+  uk:{ analyze:'Пояснити документ', loading:'Читаю документ…', recognized:'Документ розпізнано', summary:'Що тут написано', actions:'Що потрібно зробити', reset:'← Ще один документ', placeholder:"Наприклад: \"Прийшов лист, не розумію що від мене хочуть\"", uploadTitle:'Завантажити фото документа', uploadHint:'Лист, повідомлення, договір, штраф, квитанція…', commentLabel:"Додати коментар або вставити текст (необов'язково)", examplesLabel:'Спробувати приклад', ex_tax:'Лист від податкової', ex_fine:'Штраф за парковку', ex_bank:'Сповіщення банку', ex_health:'Виклик до лікаря', scLabel:'Сканів сьогодні', limitText:'Ви використали всі 3 безкоштовні скани сьогодні.', historyTitle:'Історія', backLabel:'Назад', historyBtnLabel:'Історія сканів', signoutLabel:'Вийти', profileBack:'← Назад', authTitle:'Увійти в DocClear', authSub:'Зберігайте історію документів', upgradeBtn:'Оновити →' },
+  fr:{ analyze:'Expliquer ce document', loading:'Lecture du document…', recognized:'Document reconnu', summary:'Ce que dit le document', actions:"Ce qu'il faut faire", reset:'← Scanner un autre document', placeholder:"Ex: \"J'ai reçu une lettre et je ne comprends pas ce qu'on me demande\"", uploadTitle:'Télécharger la photo du document', uploadHint:'Lettre, avis, contrat, amende, reçu…', commentLabel:'Ajouter un commentaire ou coller du texte (optionnel)', examplesLabel:'Essayer un exemple', ex_tax:'Avis fiscal', ex_fine:'Amende de stationnement', ex_bank:'Alerte bancaire', ex_health:'Convocation médicale', scLabel:"Scans aujourd'hui", limitText:'Vous avez utilisé vos 3 scans gratuits du jour.', historyTitle:'Historique', backLabel:'Retour', historyBtnLabel:'Historique des scans', signoutLabel:'Se déconnecter', profileBack:'← Retour', authTitle:'Connexion à DocClear', authSub:'Sauvegardez votre historique de documents', upgradeBtn:'Mettre à niveau →' },
+};
+
+const LANG_OUT = { ru:'на русском языке', he:'בעברית', en:'in English', ar:'باللغة العربية', uk:'українською мовою', fr:'en français' };
+
+const EXAMPLES = {
+  tax:"Налоговая инспекция. Уведомление о задолженности. По состоянию на 01.03.2026 за вами числится задолженность по налогу на доходы физических лиц в размере 3,200 шекелей. Просим погасить до 31.03.2026. В случае неоплаты будет начислена пеня 0.04% в день.",
+  fine:"עיריית תל אביב. הודעה על קנס חניה. רכבך מספר 12-345-67 קיבל דוח חניה ביום 15.03.2026 בשעה 14:32 ברחוב דיזנגוף 45. סכום הקנס: 250 שקלים. לתשלום מוקדם עד 30.03.2026: 188 שקלים.",
+  bank:"Bank Hapoalim. Dear customer, your credit card ending in 4521 has exceeded its credit limit by 850 NIS. Please make a payment within 5 business days to avoid suspension of the card.",
+  health:"קופת חולים מכבי. הינך מוזמן לביקורת שנתית אצל ד\"ר כהן בתאריך 25.03.2026 בשעה 10:00. כתובת: רחוב הרצל 12, תל אביב. לאישור: 3555*"
+};
+
+// ── State ──
+let selectedLang = null, rememberChoice = false, dropdownOpen = false;
+let currentUser = null, userDoc = null;
+let imageBase64 = null, exampleText = null;
+let isSignUp = false;
+
+// ── Helpers ──
+function t(key){ return (UI[selectedLang]||UI.en)[key]||''; }
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('screen-'+name);
+  if(el){ el.classList.add('active'); el.classList.remove('anim'); void el.offsetWidth; el.classList.add('anim'); }
+}
+
+// ── Lang screen ──
+window.toggleDropdown = ()=>{
+  dropdownOpen=!dropdownOpen;
+  document.getElementById('langDropdown').classList.toggle('open',dropdownOpen);
+  document.getElementById('langSelectorBtn').classList.toggle('open',dropdownOpen);
+};
+window.selectLang = (el,silent)=>{
+  document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedLang=el.dataset.lang;
+  document.getElementById('selectedFlag').textContent=el.dataset.flag;
+  document.getElementById('selectedLangName').textContent=el.dataset.name;
+  document.getElementById('selectedLangNative').textContent=el.dataset.en;
+  document.getElementById('continueBtn').disabled=false;
+  if(!silent){ dropdownOpen=false; document.getElementById('langDropdown').classList.remove('open'); document.getElementById('langSelectorBtn').classList.remove('open'); }
+};
+window.toggleRemember=()=>{ rememberChoice=!rememberChoice; document.getElementById('rememberCheck').classList.toggle('checked',rememberChoice); };
+window.goToLang=()=>showScreen('lang');
+window.goToAuth=()=>{
+  if(rememberChoice) localStorage.setItem('docscan_lang',selectedLang);
+  if(currentUser){ goToMain(); return; }
+  applyAuthUI();
+  showScreen('auth');
+};
+
+function applyAuthUI(){
+  document.getElementById('authTitle').textContent = t('authTitle');
+  document.getElementById('authSub').textContent = t('authSub');
+}
+
+// ── Auth ──
+window.toggleAuthMode=()=>{
+  isSignUp=!isSignUp;
+  document.getElementById('authSubmit').textContent=isSignUp?'Create account':'Sign in';
+  document.getElementById('authToggle').innerHTML=isSignUp?'Already have an account? <span onclick="toggleAuthMode()">Sign in</span>':'No account? <span onclick="toggleAuthMode()">Create one</span>';
+  document.getElementById('authError').style.display='none';
+};
+
+window.signInGoogle=async()=>{
+  const provider=new GoogleAuthProvider();
+  try{ await signInWithPopup(auth,provider); }
+  catch(e){ showAuthError(e.message); }
+};
+
+window.signInEmail=async()=>{
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPassword').value;
+  if(!email||!pass){ showAuthError('Please fill in both fields'); return; }
+  try{
+    if(isSignUp) await createUserWithEmailAndPassword(auth,email,pass);
+    else await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    const msgs={
+      'auth/user-not-found':'No account found with this email.',
+      'auth/wrong-password':'Wrong password.',
+      'auth/email-already-in-use':'Email already in use.',
+      'auth/weak-password':'Password must be at least 6 characters.',
+      'auth/invalid-email':'Invalid email address.',
+      'auth/invalid-credential':'Wrong email or password.',
+    };
+    showAuthError(msgs[e.code]||e.message);
+  }
+};
+
+function showAuthError(msg){
+  const el=document.getElementById('authError');
+  el.textContent=msg; el.style.display='block';
+}
+
+window.signOut=async()=>{
+  await fbSignOut(auth);
+  showScreen('lang');
+};
+
+// ── Auth state ──
+onAuthStateChanged(auth, async(user)=>{
+  currentUser=user;
+  if(user){
+    await ensureUserDoc(user);
+    if(user.photoURL){
+      document.querySelectorAll('.avatar-btn').forEach(b=>{ b.innerHTML=`<img src="${user.photoURL}" alt="">`; });
+    }
+    const saved=localStorage.getItem('docscan_lang');
+    if(saved&&!selectedLang){
+      const opts=document.querySelectorAll('.lang-opt');
+      opts.forEach(o=>{ if(o.dataset.lang===saved) selectLang(o,true); });
+    }
+    if(selectedLang) goToMain();
+    else showScreen('lang');
+  }
+});
+
+async function ensureUserDoc(user){
+  const ref=doc(db,'users',user.uid);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){
+    await setDoc(ref,{ email:user.email, displayName:user.displayName||'', plan:'free', scansToday:0, lastScanDate:'', createdAt:serverTimestamp() });
+  }
+  userDoc=(await getDoc(ref)).data();
+}
+
+// ── Main ──
+async function goToMain(){
+  applyUI();
+  const opts=document.querySelectorAll('.lang-opt');
+  opts.forEach(o=>{ if(o.dataset.lang===selectedLang){
+    document.getElementById('mainFlag').textContent=o.dataset.flag;
+    document.getElementById('mainLangLabel').textContent=o.dataset.name;
+  }});
+  if(currentUser){
+    document.getElementById('profileName').textContent=currentUser.displayName||currentUser.email||'User';
+    document.getElementById('profileEmail').textContent=currentUser.email||'';
+    if(currentUser.photoURL){
+      document.getElementById('profileAvatar').innerHTML=`<img src="${currentUser.photoURL}" alt="">`;
+    }
+    await refreshUserDoc();
+    updateScanCounter();
+  }
+  showScreen('main');
+}
+
+async function refreshUserDoc(){
+  if(!currentUser) return;
+  const ref=doc(db,'users',currentUser.uid);
+  userDoc=(await getDoc(ref)).data();
+}
+
+function updateScanCounter(){
+  if(!userDoc) return;
+  const isPro=userDoc.plan==='pro';
+  const today=new Date().toDateString();
+  const scansToday=(userDoc.lastScanDate===today)?userDoc.scansToday:0;
+  const remaining=Math.max(0,FREE_LIMIT-scansToday);
+
+  document.getElementById('scLabel').textContent=t('scLabel');
+  const dots=document.getElementById('scDots');
+  const right=document.getElementById('scRight');
+
+  if(isPro){
+    dots.innerHTML='';
+    right.innerHTML=`<span class="sc-unlimited">∞ Pro</span>`;
+    document.getElementById('planName').textContent='Pro';
+    document.getElementById('planUpgradeBtn').style.display='none';
+  } else {
+    dots.innerHTML=Array.from({length:FREE_LIMIT},(_,i)=>`<div class="sc-dot${i<scansToday?' used':''}"></div>`).join('');
+    right.innerHTML=remaining>0?`<span class="sc-upgrade" onclick="goToProfile()">${remaining} left</span>`:`<span class="sc-upgrade" onclick="goToProfile()">${t('limitText').split('.')[0]}</span>`;
+  }
+}
+
+function canScan(){
+  if(!userDoc) return true;
+  if(userDoc.plan==='pro') return true;
+  const today=new Date().toDateString();
+  const scansToday=(userDoc.lastScanDate===today)?userDoc.scansToday:0;
+  return scansToday<FREE_LIMIT;
+}
+
+async function recordScan(result){
+  if(!currentUser) return;
+  const today=new Date().toDateString();
+  const ref=doc(db,'users',currentUser.uid);
+  const scansToday=(userDoc.lastScanDate===today)?userDoc.scansToday:0;
+  await updateDoc(ref,{ scansToday:scansToday+1, lastScanDate:today });
+  await addDoc(collection(db,'users',currentUser.uid,'scans'),{
+    docType:result.docType||'', summary:result.summary||'',
+    deadline:result.deadline||null, actions:result.actions||[],
+    createdAt:serverTimestamp()
+  });
+  await refreshUserDoc();
+  updateScanCounter();
+}
+
+// ── applyUI ──
+function applyUI(){
+  const rtl=['he','ar'].includes(selectedLang);
+  document.getElementById('screen-main').dir=rtl?'rtl':'ltr';
+  document.getElementById('analyzeLabel').textContent=t('analyze');
+  document.getElementById('loadingText').textContent=t('loading');
+  document.getElementById('recognizedLabel').textContent=t('recognized');
+  document.getElementById('summaryLabel').textContent=t('summary');
+  document.getElementById('actionsLabel').textContent=t('actions');
+  document.getElementById('resetBtn').textContent=t('reset');
+  document.getElementById('textInput').placeholder=t('placeholder');
+  document.getElementById('upload-title').textContent=t('uploadTitle');
+  document.getElementById('upload-hint').textContent=t('uploadHint');
+  document.getElementById('comment-label-text').textContent=t('commentLabel');
+  document.getElementById('examples-label').textContent=t('examplesLabel');
+  document.getElementById('ex-tax').textContent=t('ex_tax');
+  document.getElementById('ex-fine').textContent=t('ex_fine');
+  document.getElementById('ex-bank').textContent=t('ex_bank');
+  document.getElementById('ex-health').textContent=t('ex_health');
+  document.getElementById('limitText').textContent=t('limitText');
+  document.getElementById('historyTitle').textContent=t('historyTitle');
+  document.getElementById('backLabel').textContent=t('backLabel');
+  document.getElementById('historyBtnLabel').textContent=t('historyBtnLabel');
+  document.getElementById('signoutLabel').textContent=t('signoutLabel');
+  document.getElementById('profileBack').textContent=t('profileBack');
+  document.getElementById('scLabel').textContent=t('scLabel');
+}
+
+// ── File input ──
+document.getElementById('fileInput').addEventListener('change',function(e){
+  const f=e.target.files[0]; if(!f) return;
+  exampleText=null;
+  const r=new FileReader();
+  r.onload=ev=>{
+    imageBase64=ev.target.result.split(',')[1];
+    document.getElementById('previewImg').src=ev.target.result;
+    document.getElementById('previewWrap').style.display='block';
+    document.getElementById('uploadZone').style.display='none';
+    checkReady();
+  };
+  r.readAsDataURL(f);
+});
+
+window.removePhoto=()=>{
+  imageBase64=null;
+  document.getElementById('previewWrap').style.display='none';
+  document.getElementById('uploadZone').style.display='block';
+  document.getElementById('fileInput').value='';
+  checkReady();
+};
+
+document.getElementById('textInput').addEventListener('input',checkReady);
+
+function checkReady(){
+  document.getElementById('analyzeBtn').disabled=!(imageBase64||exampleText||document.getElementById('textInput').value.trim());
+}
+
+window.loadExample=type=>{
+  exampleText=EXAMPLES[type];
+  imageBase64=null;
+  document.getElementById('previewWrap').style.display='none';
+  document.getElementById('uploadZone').style.display='none';
+  let ph=document.getElementById('exPlaceholder');
+  if(!ph){
+    ph=document.createElement('div');ph.id='exPlaceholder';ph.className='glass-card';
+    ph.style.cssText='padding:1rem 1.2rem;position:relative;font-size:.82rem;color:rgba(255,255,255,0.55);line-height:1.6;';
+    const rb=document.createElement('button');
+    rb.textContent='✕';rb.style.cssText='position:absolute;top:8px;right:10px;background:rgba(0,0,0,.4);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px;';
+    rb.onclick=clearExample;ph.appendChild(rb);
+    document.getElementById('uploadZone').parentElement.after(ph);
+  }
+  const old=ph.querySelector('.ex-content');if(old)old.remove();
+  const wrap=document.createElement('div');wrap.className='ex-content';
+  const lbl=document.createElement('div');lbl.style.cssText='font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(168,230,207,.6);margin-bottom:6px;';lbl.textContent='Example document';
+  const txt=document.createElement('div');txt.textContent=EXAMPLES[type].substring(0,120)+'…';
+  wrap.appendChild(lbl);wrap.appendChild(txt);ph.appendChild(wrap);ph.style.display='block';
+  document.getElementById('analyzeBtn').disabled=false;
+  hideResult();
+};
+
+window.clearExample=()=>{
+  exampleText=null;
+  const ph=document.getElementById('exPlaceholder');
+  if(ph) ph.style.display='none';
+  document.getElementById('uploadZone').style.display='block';
+  checkReady(); hideResult();
+};
+
+function hideResult(){
+  document.getElementById('resultCard').style.display='none';
+  document.getElementById('resetBtn').style.display='none';
+  document.getElementById('examplesBlock').style.display='block';
+  document.getElementById('errorStrip').style.display='none';
+  document.getElementById('limitStrip').style.display='none';
+}
+
+window.resetScan=()=>{
+  removePhoto(); clearExample();
+  document.getElementById('textInput').value='';
+  hideResult();
+  document.getElementById('analyzeBtn').disabled=true;
+};
+
+// ── Analyze ──
+window.analyze=async()=>{
+  if(!canScan()){
+    document.getElementById('limitStrip').style.display='block';
+    document.getElementById('examplesBlock').style.display='none';
+    return;
+  }
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=true;
+  document.getElementById('loadingCard').style.display='block';
+  document.getElementById('resultCard').style.display='none';
+  document.getElementById('resetBtn').style.display='none';
+  document.getElementById('errorStrip').style.display='none';
+  document.getElementById('limitStrip').style.display='none';
+  document.getElementById('examplesBlock').style.display='none';
+
+  const extraText=document.getElementById('textInput').value.trim();
+  const langOut=LANG_OUT[selectedLang]||'in English';
+  const prompt=`Analyse this official document and respond ${langOut} strictly as a JSON object (no markdown, no backticks, just raw JSON):\n{\n  "docType": "document type in one short phrase",\n  "summary": "plain-language explanation, 2-4 sentences, no jargon",\n  "deadline": "deadline or important date if any, otherwise null",\n  "actions": ["step 1","step 2","step 3"]\n}${extraText?'\n\nUser note: '+extraText:''}`;
+
+  try{
+    let messages;
+    if(exampleText) messages=[{role:'user',content:`Document text:\n"${exampleText}"\n\n${prompt}`}];
+    else if(imageBase64) messages=[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imageBase64}},{type:'text',text:prompt}]}];
+    else messages=[{role:'user',content:`Document text:\n"${document.getElementById('textInput').value.trim()}"\n\n${prompt}`}];
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages})
+    });
+    const data=await resp.json();
+    const raw=data.content?.find(b=>b.type==='text')?.text||'';
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    document.getElementById('docType').textContent=parsed.docType||'';
+    document.getElementById('docSummary').textContent=parsed.summary||'';
+    if(parsed.deadline){ document.getElementById('deadlineText').textContent='⏰  '+parsed.deadline; document.getElementById('deadlinePill').style.display='inline-flex'; }
+    else document.getElementById('deadlinePill').style.display='none';
+    const list=document.getElementById('stepsList'); list.innerHTML='';
+    (parsed.actions||[]).forEach((a,i)=>{ const li=document.createElement('li');li.className='step-item';li.innerHTML=`<div class="step-num">${i+1}</div><div class="step-text">${a}</div>`;list.appendChild(li); });
+
+    await recordScan(parsed);
+
+    document.getElementById('loadingCard').style.display='none';
+    document.getElementById('resultCard').style.display='block';
+    document.getElementById('resetBtn').style.display='block';
+    document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(err){
+    document.getElementById('loadingCard').style.display='none';
+    document.getElementById('errorStrip').style.display='block';
+    document.getElementById('errorStrip').textContent=(UI[selectedLang]||UI.en).errorText||'Error. Please try again.';
+    document.getElementById('examplesBlock').style.display='block';
+    console.error(err);
+  }
+  btn.disabled=false;
+};
+
+// ── History ──
+window.showScreen=showScreen;
+window.goToProfile=()=>showScreen('profile');
+
+async function loadHistory(){
+  const list=document.getElementById('historyList');
+  list.innerHTML='';
+  if(!currentUser){ list.innerHTML=`<div class="history-empty">Sign in to see your history</div>`; return; }
+  const q=query(collection(db,'users',currentUser.uid,'scans'),orderBy('createdAt','desc'),limit(20));
+  const snap=await getDocs(q);
+  if(snap.empty){ list.innerHTML=`<div class="history-empty">No scans yet.<br>Scan your first document!</div>`; return; }
+  snap.forEach(d=>{
+    const data=d.data();
+    const date=data.createdAt?.toDate?data.createdAt.toDate().toLocaleDateString():'';
+    const item=document.createElement('div');item.className='history-item';
+    item.innerHTML=`<div class="hi-type">${data.docType||'Document'}</div><div class="hi-summary">${data.summary||''}</div><div class="hi-date">${date}</div>`;
+    list.appendChild(item);
+  });
+}
+
+// Intercept history screen show to load data
+const origShow=showScreen;
+window.showScreen=async(name)=>{
+  origShow(name);
+  if(name==='history') await loadHistory();
+};
+
+// ── Drag & drop ──
+const uz=document.getElementById('uploadZone');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag-over');});
+uz.addEventListener('dragleave',()=>uz.classList.remove('drag-over'));
+uz.addEventListener('drop',e=>{
+  e.preventDefault();uz.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    const r=new FileReader();
+    r.onload=ev=>{imageBase64=ev.target.result.split(',')[1];document.getElementById('previewImg').src=ev.target.result;document.getElementById('previewWrap').style.display='block';document.getElementById('uploadZone').style.display='none';checkReady();};
+    r.readAsDataURL(f);
+  }
+});
+
+// ── Init ──
+const saved=localStorage.getItem('docscan_lang');
+if(saved){
+  const opts=document.querySelectorAll('.lang-opt');
+  opts.forEach(o=>{ if(o.dataset.lang===saved) selectLang(o,true); });
+  if(!auth.currentUser) showScreen('auth');
+} else {
+  showScreen('lang');
+}
+</script>
+</body>
+</html>
